@@ -125,11 +125,19 @@ export default function Dashboard() {
               </Box>
             </Grid>
             <Grid item xs={12} md={5}>
-              <Avatar sx={{ bgcolor: 'secondary.main', width: 90, height: 90, mx: 'auto', fontSize: 40 }}>
-                {user?.mascot?.name?.charAt(0)?.toUpperCase() ?? 'Q'}
+              <Avatar
+                sx={{
+                  bgcolor: user?.mascotEvolution?.color ?? 'secondary.main',
+                  width: 90,
+                  height: 90,
+                  mx: 'auto',
+                  fontSize: 40,
+                }}
+              >
+                {user?.mascotEvolution?.emoji || user?.mascot?.name?.charAt(0)?.toUpperCase() || 'Q'}
               </Avatar>
               <Typography variant="body2" align="center" sx={{ mt: 1 }}>
-                Nivel {level} · {user?.mascot?.evolutionName ?? ''}
+                Nivel {level} · {user?.mascot?.name} · {user?.mascotEvolution?.evolutionName ?? ''}
               </Typography>
             </Grid>
           </Grid>

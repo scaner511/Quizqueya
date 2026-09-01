@@ -22,6 +22,9 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import PaidIcon from '@mui/icons-material/Paid';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import LogoutIcon from '@mui/icons-material/Logout';
+import PersonIcon from '@mui/icons-material/Person';
+import HistoryIcon from '@mui/icons-material/History';
+import StorefrontIcon from '@mui/icons-material/Storefront';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function MainLayout() {
@@ -86,6 +89,15 @@ export default function MainLayout() {
                   <Typography variant="body2">{user.province.name}</Typography>
                 </MenuItem>
               )}
+              <MenuItem onClick={() => { setAnchorEl(null); navigate('/tienda'); }}>
+                <StorefrontIcon fontSize="small" sx={{ mr: 1 }} /> Tienda
+              </MenuItem>
+              <MenuItem onClick={() => { setAnchorEl(null); navigate('/historial'); }}>
+                <HistoryIcon fontSize="small" sx={{ mr: 1 }} /> Historial
+              </MenuItem>
+              <MenuItem onClick={() => { setAnchorEl(null); navigate('/perfil'); }}>
+                <PersonIcon fontSize="small" sx={{ mr: 1 }} /> Mi perfil
+              </MenuItem>
               <MenuItem onClick={handleLogout}>
                 <LogoutIcon fontSize="small" sx={{ mr: 1 }} /> Cerrar sesión
               </MenuItem>

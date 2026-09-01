@@ -17,6 +17,7 @@ const {
 } = require('../services/progression');
 const { difficultyForStreak } = require('../services/dificultad');
 const { buildShuffledQuestion } = require('../services/opciones');
+const { evolutionForLevel } = require('../services/evolution');
 
 const SECONDS_PER_QUESTION = 30;
 
@@ -337,6 +338,7 @@ exports.playerState = async (req, res, next) => {
 
     const info = nextLifeInfo(user);
     const { level } = levelFromXp(user.xp);
+    const mascotEvolution = await evolutionForLevel(user.mascotId, level);
 
     return res.json({
       user: {
@@ -350,6 +352,7 @@ exports.playerState = async (req, res, next) => {
         streakDays: user.streakDays,
         province: user.province,
         mascot: user.mascot,
+        mascotEvolution,
         totalCorrect: user.totalCorrect,
         totalWrong: user.totalWrong,
         totalGames: user.totalGames,

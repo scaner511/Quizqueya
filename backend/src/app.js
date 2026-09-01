@@ -28,9 +28,11 @@ const authLimiter = rateLimit({
 // Rutas públicas
 app.use('/api/auth', authLimiter, require('./routes/auth.routes'));
 app.use('/api/catalog', require('./routes/catalog.routes'));
+app.use('/api/shop', require('./routes/shop.routes'));
 app.use('/api/provinces', require('./routes/province.routes'));
 
-// Rutas del juego (con auth)
+// Rutas del juego y del historial (con auth)
+app.use('/api/history', require('./routes/history.routes'));
 app.use('/api', require('./routes/game.routes'));
 
 app.use('/api', (req, res) => {

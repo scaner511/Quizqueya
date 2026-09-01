@@ -6,6 +6,9 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Quiz from './pages/Quiz';
 import Ranking from './pages/Ranking';
+import Profile from './pages/Profile';
+import History from './pages/History';
+import Shop from './pages/Shop';
 import NotFound from './pages/NotFound';
 
 function AppRoute() {
@@ -36,6 +39,9 @@ export default function AppRoutes() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/jugar" element={<Quiz />} />
             <Route path="/ranking" element={<Ranking />} />
+            <Route path="/perfil" element={<Profile />} />
+            <Route path="/historial" element={<History />} />
+            <Route path="/tienda" element={<Shop />} />
           </Route>
         </Route>
 

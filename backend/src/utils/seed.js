@@ -1,4 +1,4 @@
-const { sequelize, User, Province, Category, Question, Mascot } = require('../models');
+const { sequelize, User, Province, Category, Question, Mascot, MascotEvolution, PowerUp } = require('../models');
 const bcrypt = require('bcryptjs');
 
 async function seed() {
@@ -77,6 +77,52 @@ async function seed() {
     ];
     const createdMascots = await Mascot.bulkCreate(mascots);
     console.log(`${createdMascots.length} mascotas creadas`);
+
+    // ---------- EVOLUCIONES DE MASCOTAS ----------
+    // Cada mascota tiene 4 etapas: Novato (1), Guerrero (5), Capitán (10), Legendario (20)
+    const evolutionTiers = [
+      { level: 1, name: 'Novato', color: '' },
+      { level: 5, name: 'Guerrero', color: '' },
+      { level: 10, name: 'Capitán', color: '' },
+      { level: 20, name: 'Legendario', color: '' },
+    ];
+    const evolutionColors = {
+      1: { novato: '#BDBDBD', guerrero: '#FF8A65', capitan: '#FFC107', legendario: '#E91E63' },
+      2: { novato: '#BDBDBD', guerrero: '#64B5F6', capitan: '#FFC107', legendario: '#9C27B0' },
+      3: { novato: '#BDBDBD', guerrero: '#EF9A9A', capitan: '#FFC107', legendario: '#F44336' },
+      4: { novato: '#BDBDBD', guerrero: '#FFB74D', capitan: '#FFC107', legendario: '#FF5722' },
+      5: { novato: '#BDBDBD', guerrero: '#CE93D8', capitan: '#FFC107', legendario: '#5E35B1' },
+      6: { novato: '#BDBDBD', guerrero: '#A5D6A7', capitan: '#FFC107', legendario: '#2E7D32' },
+    };
+    const evolutions = [];
+    createdMascots.forEach((m) => {
+      const colors = evolutionColors[m.id] || {};
+      evolutionTiers.forEach((tier, i) => {
+        const colorKey = tier.level === 1 ? 'novato' : tier.level === 5 ? 'guerrero' : tier.level === 10 ? 'capitan' : 'legendario';
+        evolutions.push({
+          mascotId: m.id,
+          evolutionLevel: tier.level,
+          evolutionName: tier.name,
+          minLevel: tier.level,
+          color: colors[colorKey] || m.color,
+          emoji: String(i + 1),
+        });
+      });
+    });
+    await MascotEvolution.bulkCreate(evolutions);
+    console.log(`${evolutions.length} evoluciones de mascotas creadas`);
+
+    // ---------- TIENDA / COMODINES ----------
+    const powerUps = [
+      { slug: 'eliminar_dos', name: 'Eliminar dos', description: 'Elimina 2 respuestas incorrectas.', type: 'eliminar_dos', price: 50, emoji: '✂️' },
+      { slug: 'congelar', name: 'Congelar tiempo', description: 'Congela el temporizador por 3 respuestas.', type: 'congelar', price: 120, emoji: '❄️' },
+      { slug: 'mas_tiempo', name: '+15 segundos', description: 'Añade 15 segundos al temporizador.', type: 'mas_tiempo', price: 40, emoji: '⏱️' },
+      { slug: 'saltar', name: 'Saltar pregunta', description: 'Salta la pregunta sin perder vida.', type: 'saltar', price: 80, emoji: '⏭️' },
+      { slug: 'multiplicador_xp', name: 'Multiplicador XP', description: 'Duplica la XP de la siguiente respuesta.', type: 'multiplicador_xp', price: 150, emoji: '✨' },
+      { slug: 'pista', name: 'Pista', description: 'Revela la letra inicial de la respuesta correcta.', type: 'pista', price: 30, emoji: '💡' },
+    ];
+    await PowerUp.bulkCreate(powerUps);
+    console.log(`${powerUps.length} comodines creados`);
 
     // ---------- PREGUNTAS ----------
     const questions = buildQuestions(catMap);

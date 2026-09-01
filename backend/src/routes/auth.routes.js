@@ -32,4 +32,25 @@ router.post(
 
 router.get('/me', authMiddleware, authController.me);
 
+router.put(
+  '/profile',
+  authMiddleware,
+  [
+    body('nickname').optional().isString().isLength({ min: 3, max: 50 }).withMessage('Nickname entre 3 y 50 caracteres'),
+  ],
+  validate,
+  authController.updateProfile,
+);
+
+router.post(
+  '/change-password',
+  authMiddleware,
+  [
+    body('currentPassword').notEmpty().withMessage('Contraseña actual requerida'),
+    body('newPassword').isLength({ min: 6 }).withMessage('La nueva contraseña debe tener al menos 6 caracteres'),
+  ],
+  validate,
+  authController.changePassword,
+);
+
 module.exports = router;
