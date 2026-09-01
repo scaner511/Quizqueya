@@ -8,6 +8,8 @@ const {
   Province,
   Mascot,
   Category,
+  PowerUp,
+  UserPowerUp,
 } = require('../models');
 const {
   MAX_LIVES,
@@ -199,8 +201,15 @@ exports.answer = async (req, res, next) => {
     // Calcular bonificación por tiempo (0-40% extra sobre la XP base)
     const t = typeof timeLeft === 'number' ? Math.min(timeLeft, SECONDS_PER_QUESTION) : 0;
     const timeBonus = Math.round(xpForDifficulty(question.difficulty, 0) * (t / SECONDS_PER_QUESTION) * 0.4);
-    const xpEarned = isCorrect ? xpForDifficulty(question.difficulty, timeBonus) : 0;
+    let xpEarned = isCorrect ? xpForDifficulty(question.difficulty, timeBonus) : 0;
     const pesosEarned = isCorrect ? pesosFor(question.difficulty) : 0;
+
+    // Comodín "multiplicador de XP": duplica la XP de esta respuesta y se desactiva
+    const multiplierUsed = isCorrect && game.powerUpMult;
+    if (multiplierUsed) {
+      xpEarned *= 2;
+      game.powerUpMult = false;
+    }
 
     let livesLost = 0;
     if (!isCorrect && user.lives > 0) {
@@ -292,6 +301,108 @@ exports.answer = async (req, res, next) => {
         totalWrong: user.totalWrong,
       },
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Aplica un comodín (power-up) durante la partida activa
+exports.usePowerUp = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const { gameId } = req.params;
+    const { powerUpId, questionId } = req.body;
+
+    const game = await Game.findOne({
+      where: { id: gameId, userId, status: 'activa' },
+    });
+    if (!game) {
+      return res.status(404).json({ message: 'Partida no encontrada o finalizada' });
+    }
+
+    const item = await PowerUp.findByPk(powerUpId);
+    if (!item) {
+      return res.status(404).json({ message: 'Comodín no disponible' });
+    }
+
+    // Verificar inventario del usuario
+    const stash = await UserPowerUp.findOne({
+      where: { userId, powerUpId, quantity: { [Op.gt]: 0 } },
+    });
+    if (!stash) {
+      return res.status(400).json({ message: 'No tienes este comodín en tu inventario' });
+    }
+
+    // Para comodines que dependen de la pregunta actual, reconstruir el orden mezclado
+    let shuffled = null;
+    if (['eliminar_dos', 'pista'].includes(item.slug)) {
+      if (!questionId) {
+        return res.status(400).json({ message: 'Falta la pregunta actual' });
+      }
+      const question = await Question.findByPk(questionId);
+      if (!question) {
+        return res.status(404).json({ message: 'Pregunta no encontrada' });
+      }
+      shuffled = buildShuffledQuestion(
+        question.options,
+        question.correctIndex,
+        game.id,
+        game.totalQuestions,
+      );
+    }
+
+    switch (item.slug) {
+      case 'eliminar_dos': {
+        const opts = shuffled.options.length;
+        if (opts < 3) {
+          return res.status(400).json({ message: 'La pregunta no tiene suficientes opciones' });
+        }
+        // Quitar 2 opciones incorrectas (distintas del correctIndex)
+        const remove = [];
+        for (let i = 0; i < opts && remove.length < 2; i++) {
+          if (i !== shuffled.correctIndex) remove.push(i);
+        }
+        stash.quantity -= 1;
+        await stash.save();
+        return res.json({ type: 'eliminar_dos', removeIndices: remove });
+      }
+      case 'pista': {
+        const correctText = shuffled.options[shuffled.correctIndex];
+        stash.quantity -= 1;
+        await stash.save();
+        return res.json({
+          type: 'pista',
+          hint: typeof correctText === 'string' ? correctText.charAt(0) : '?',
+        });
+      }
+      case 'mas_tiempo': {
+        stash.quantity -= 1;
+        await stash.save();
+        return res.json({ type: 'mas_tiempo', extraSeconds: 15 });
+      }
+      case 'congelar': {
+        stash.quantity -= 1;
+        await stash.save();
+        return res.json({ type: 'congelar', frozenQuestions: 3 });
+      }
+      case 'saltar': {
+        // Salta la pregunta sin afectar racha ni vida
+        game.totalQuestions += 1;
+        await game.save();
+        stash.quantity -= 1;
+        await stash.save();
+        return res.json({ type: 'saltar', skip: true });
+      }
+      case 'multiplicador_xp': {
+        game.powerUpMult = true;
+        await game.save();
+        stash.quantity -= 1;
+        await stash.save();
+        return res.json({ type: 'multiplicador_xp', active: true });
+      }
+      default:
+        return res.status(400).json({ message: 'Comodín no soportado' });
+    }
   } catch (err) {
     next(err);
   }

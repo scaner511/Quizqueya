@@ -48,6 +48,12 @@ const Game = sequelize.define('Game', {
     allowNull: false,
     defaultValue: 0,
   },
+  // Comodín "multiplicador de XP" activo para la siguiente respuesta
+  powerUpMult: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
 }, {
   indexes: [
     { fields: ['userId'] },
