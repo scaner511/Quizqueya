@@ -4,6 +4,7 @@ import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Missions from './pages/Missions';
 import Quiz from './pages/Quiz';
 import Ranking from './pages/Ranking';
 import Profile from './pages/Profile';
@@ -37,6 +38,7 @@ export default function AppRoutes() {
         <Route element={<AppRoute />}>
           <Route element={<MainLayout />}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/misiones" element={<Missions />} />
             <Route path="/jugar" element={<Quiz />} />
             <Route path="/ranking" element={<Ranking />} />
             <Route path="/perfil" element={<Profile />} />

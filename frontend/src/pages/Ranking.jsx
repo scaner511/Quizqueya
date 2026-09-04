@@ -55,7 +55,7 @@ export default function Ranking() {
     <Container maxWidth="md" sx={{ py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <EmojiEventsIcon color="primary" />
-        <Typography variant="h5" fontWeight={800}>
+        <Typography variant="h5" fontWeight={800} sx={{ color: '#fff' }}>
           Ranking
         </Typography>
       </Box>
@@ -83,13 +83,17 @@ export default function Ranking() {
               <ListItemText
                 primary={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography fontWeight={700}>{p.nickname}</Typography>
-                    <Chip size="small" label={`${p.province?.name ?? ''}`} variant="outlined" />
+                    <Typography fontWeight={700} sx={{ color: '#fff' }}>{p.nickname}</Typography>
+                    <Chip size="small" label={`${p.province?.name ?? ''}`} variant="outlined" sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.4)' }} />
                   </Box>
                 }
-                secondary={`Nivel ${p.level} · Racha ${p.streakDays} días`}
+                secondary={
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.75)' }}>
+                    {`Nivel ${p.level} · Racha ${p.streakDays} días`}
+                  </Typography>
+                }
               />
-              <Typography fontWeight={700} color="primary">
+              <Typography fontWeight={700} sx={{ color: '#FFC10D' }}>
                 {p.xp} XP
               </Typography>
             </ListItem>
@@ -105,10 +109,14 @@ export default function Ranking() {
                 </Avatar>
               </ListItemAvatar>
               <ListItemText
-                primary={<Typography fontWeight={700}>{p.name}</Typography>}
-                secondary={`${p.players} jugadores`}
+                primary={<Typography fontWeight={700} sx={{ color: '#fff' }}>{p.name}</Typography>}
+                secondary={
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.75)' }}>
+                    {`${p.players} jugadores`}
+                  </Typography>
+                }
               />
-              <Typography fontWeight={700} color="primary">
+              <Typography fontWeight={700} sx={{ color: '#FFC10D' }}>
                 {p.totalXp} XP
               </Typography>
             </ListItem>

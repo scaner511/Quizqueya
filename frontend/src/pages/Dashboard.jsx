@@ -4,7 +4,6 @@ import {
   Typography,
   Button,
   CircularProgress,
-  Chip,
   Avatar,
   Dialog,
   DialogTitle,
@@ -15,16 +14,9 @@ import {
   Alert,
 } from '@mui/material';
 import {
-  Favorite as FavoriteIcon,
-  Paid as PaidIcon,
-  LocalFireDepartment as FireIcon,
-  SportsEsports as PlayIcon,
   Casino as WheelIcon,
-  CardGiftcard as GiftIcon,
-  EmojiEvents as TrophyIcon,
-  WorkspacePremium as MedalIcon,
-  CheckCircle as CheckIcon,
   Lock as LockIcon,
+  Checklist as MissionsIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -257,105 +249,10 @@ const styles = {
   },
 };
 
-function StatTile({ icon, label, value, color, highlight }) {
-  return (
-    <Box
-      sx={{
-        flex: 1,
-        minWidth: 70,
-        textAlign: 'center',
-        px: 1,
-        py: 1.4,
-        borderRadius: 3,
-        background: highlight ? 'rgba(255,193,13,0.18)' : 'rgba(255,255,255,0.08)',
-        border: `1px solid ${highlight ? 'rgba(255,193,13,0.45)' : 'rgba(255,255,255,0.14)'}`,
-        backdropFilter: 'blur(8px)',
-      }}
-    >
-      <Box sx={{ fontSize: 22, color }}>{icon}</Box>
-      <Typography variant="h6" fontWeight={900} sx={{ color: '#fff', lineHeight: 1.1, mt: 0.4 }}>
-        {value}
-      </Typography>
-      <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>
-        {label}
-      </Typography>
-    </Box>
-  );
-}
-
-function MissionRow({ emoji, title, progress, target }) {
-  const pct = Math.min(100, (progress / target) * 100);
-  const done = progress >= target;
-  return (
-    <Box sx={{ mb: 1.6 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-        <Typography variant="body2" sx={{ color: '#fff', fontWeight: 700 }}>
-          {emoji} {title}
-        </Typography>
-        {done ? (
-          <CheckIcon sx={{ color: '#2EBD59', fontSize: 20 }} />
-        ) : (
-          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-            {progress}/{target}
-          </Typography>
-        )}
-      </Box>
-      <Box
-        sx={{
-          width: '100%',
-          height: 10,
-          borderRadius: 6,
-          background: 'rgba(255,255,255,0.14)',
-          overflow: 'hidden',
-        }}
-      >
-        <Box
-          sx={{
-            width: `${pct}%`,
-            height: '100%',
-            background: done
-              ? 'linear-gradient(90deg,#2EBD59,#58D87F)'
-              : 'linear-gradient(90deg,#FFC10D,#FFD75E)',
-            borderRadius: 6,
-            boxShadow: '0 0 8px rgba(255,193,13,0.5)',
-          }}
-        />
-      </Box>
-    </Box>
-  );
-}
-
-function AchievementCard({ emoji, title, desc, unlocked }) {
-  return (
-    <Box
-      sx={{
-        flex: 1,
-        minWidth: 96,
-        textAlign: 'center',
-        px: 1,
-        py: 1.6,
-        borderRadius: 3,
-        background: unlocked ? 'rgba(46,189,89,0.14)' : 'rgba(255,255,255,0.06)',
-        border: `1px solid ${unlocked ? 'rgba(46,189,89,0.5)' : 'rgba(255,255,255,0.14)'}`,
-        opacity: unlocked ? 1 : 0.8,
-      }}
-    >
-      <Box sx={{ fontSize: 26, mb: 0.5, filter: unlocked ? 'none' : 'grayscale(1)' }}>
-        {unlocked ? emoji : '🔒'}
-      </Box>
-      <Typography variant="body2" fontWeight={800} sx={{ color: '#fff', fontSize: 12, lineHeight: 1.15 }}>
-        {title}
-      </Typography>
-      <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>{desc}</Typography>
-    </Box>
-  );
-}
-
 export default function Dashboard() {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
-  const [topProvinces, setTopProvinces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [livesInfo, setLivesInfo] = useState({ lives: user?.lives, nextLifeInMs: 0, regenerating: 0 });
   const [countdown, setCountdown] = useState(0);
@@ -395,10 +292,9 @@ export default function Dashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [catRes, stateRes, provRes] = await Promise.all([
+        const [catRes, stateRes] = await Promise.all([
           api.get('/catalog/categories'),
           api.get('/state'),
-          api.get('/provinces/province-ranking').catch(() => null),
         ]);
         // Filtrar y mapear solo las categorías destacadas en español
         const mapped = (catRes.data.categories || [])
@@ -408,7 +304,6 @@ export default function Dashboard() {
           })
           .filter(Boolean);
         setCategories(mapped);
-        if (Array.isArray(provRes?.data?.ranking)) setTopProvinces(provRes.data.ranking.slice(0, 3));
 
         const state = stateRes.data.user;
         updateUser({
@@ -479,22 +374,6 @@ export default function Dashboard() {
   const rank = rankForLevel(level);
   const avatarUrl = user?.profilePic;
   const initial = user?.nickname?.charAt(0)?.toUpperCase() || 'Q';
-
-  // Misiones diarias (progreso derivado de datos reales del jugador)
-  const missions = [
-    { emoji: '✅', title: 'Responde 5 preguntas', progress: user?.totalCorrect ?? 0, target: 5 },
-    { emoji: '💰', title: 'Consigue 100 monedas', progress: Math.min(100, user?.pesos ?? 0), target: 100 },
-    { emoji: '🏆', title: 'Gana una batalla', progress: user?.totalGames ?? 0, target: 1 },
-  ];
-
-  // Logros recientes (desbloqueo derivado de datos reales)
-  const achievements = [
-    { emoji: '🏆', title: 'Historiador Novato', desc: '3 correcta', unlocked: (user?.totalCorrect ?? 0) >= 3 },
-    { emoji: '🏆', title: 'Maestro del Merengue', desc: 'Categoría música', unlocked: (user?.totalCorrect ?? 0) >= 5 },
-    { emoji: '🏆', title: 'Explorador de Provincias', desc: '5 provincias', unlocked: (user?.totalGames ?? 0) >= 2 },
-  ];
-
-  const medalEmojis = ['🥇', '🥈', '🥉'];
 
   if (loading) {
     return (
@@ -589,20 +468,20 @@ export default function Dashboard() {
 
           <IconButton
             size="small"
+            onClick={() => navigate('/misiones')}
+            sx={{ color: '#FFD75E', border: '1px solid rgba(255,193,13,0.4)', bgcolor: 'rgba(255,193,13,0.12)' }}
+            title="Misiones diarias"
+          >
+            <MissionsIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
             onClick={() => setPwOpen(true)}
             sx={{ color: '#FFD75E', border: '1px solid rgba(255,193,13,0.4)', bgcolor: 'rgba(255,193,13,0.12)' }}
             title="Cambiar contraseña"
           >
             <LockIcon fontSize="small" />
           </IconButton>
-        </Box>
-
-        {/* ===== BANDA DE ESTADÍSTICAS RÁPIDAS ===== */}
-        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-          <StatTile icon="❤️" label="Vidas" value={livesInfo.lives} color="#ff8fa5" />
-          <StatTile icon="💰" label="Monedas" value={user?.pesos ?? 0} color="#FFD54F" />
-          <StatTile icon="🔥" label="Racha" value={`${user?.streakDays ?? 0}d`} color="#ff9e80" />
-          <StatTile icon="🎁" label="Cofres" value={user?.totalGames ?? 0} color="#b39ddb" highlight />
         </Box>
 
         {livesInfo.lives <= 0 && (
@@ -673,7 +552,6 @@ export default function Dashboard() {
           <Button
             variant="contained"
             color="secondary"
-            startIcon={<GiftIcon />}
             onClick={() => navigate('/tienda')}
             sx={{ flex: 1, py: 1.6, fontSize: '1rem', fontWeight: 900 }}
           >
@@ -682,7 +560,6 @@ export default function Dashboard() {
           <Button
             variant="contained"
             color="warning"
-            startIcon={<PlayIcon />}
             onClick={() => {
               if (categories.length) {
                 const rand = categories[Math.floor(Math.random() * categories.length)];
@@ -708,70 +585,6 @@ export default function Dashboard() {
           >
             🎮 Jugar
           </Button>
-        </Box>
-
-        {/* ===== SECCIÓN MISIONES DIARIAS ===== */}
-        <Box sx={{ ...styles.glassCard, p: 2, mb: 2 }}>
-          <Typography variant="h6" sx={{ ...styles.sectionTitle, mb: 1.6, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <MedalIcon sx={{ color: '#FFC10D' }} /> Misiones Diarias
-          </Typography>
-          {missions.map((m, i) => (
-            <MissionRow key={i} {...m} />
-          ))}
-        </Box>
-
-        {/* ===== SECCIÓN LOGROS RECIENTES ===== */}
-        <Box sx={{ ...styles.glassCard, p: 2, mb: 2 }}>
-          <Typography variant="h6" sx={{ ...styles.sectionTitle, mb: 1.6, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TrophyIcon sx={{ color: '#FFC10D' }} /> Logros Recientes
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1.2, flexWrap: 'wrap' }}>
-            {achievements.map((a, i) => (
-              <AchievementCard key={i} {...a} />
-            ))}
-          </Box>
-        </Box>
-
-        {/* ===== SECCIÓN RANKING RÁPIDO ===== */}
-        <Box sx={{ ...styles.glassCard, p: 2 }}>
-          <Typography variant="h6" sx={{ ...styles.sectionTitle, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TrophyIcon sx={{ color: '#FFC10D' }} /> Ranking de Provincias
-          </Typography>
-          {topProvinces.length === 0 ? (
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-              Aún no hay datos de ranking.
-            </Typography>
-          ) : (
-            topProvinces.map((p, i) => (
-              <Box
-                key={i}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                  py: 1.1,
-                  px: 1.5,
-                  my: 0.7,
-                  borderRadius: 3,
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                }}
-              >
-                <Box sx={{ fontSize: 26, width: 32, textAlign: 'center' }}>{medalEmojis[i]}</Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body1" fontWeight={800} sx={{ color: '#fff' }}>
-                    {p.name}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                    {p.players ?? 0} jugadores · {p.totalXp ?? 0} XP
-                  </Typography>
-                </Box>
-                <Typography variant="h6" fontWeight={900} sx={{ color: '#FFC10D' }}>
-                  #{i + 1}
-                </Typography>
-              </Box>
-            ))
-          )}
         </Box>
 
         {/* Mascota decorativa */}

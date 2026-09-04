@@ -76,7 +76,7 @@ export default function Profile() {
 
   return (
     <Container maxWidth="md" sx={{ py: 3 }}>
-      <Typography variant="h5" fontWeight={800} sx={{ mb: 3 }}>
+      <Typography variant="h5" fontWeight={800} sx={{ mb: 3, color: '#fff' }}>
         Mi perfil
       </Typography>
 

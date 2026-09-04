@@ -138,7 +138,7 @@ export default function Shop() {
   return (
     <Container maxWidth="md" sx={{ py: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-        <Typography variant="h5" fontWeight={800}>
+        <Typography variant="h5" fontWeight={800} sx={{ color: '#fff' }}>
           Tienda de comodines
         </Typography>
         <Chip
@@ -151,7 +151,7 @@ export default function Shop() {
       {msg && <Alert severity="success" sx={{ mb: 2 }}>{msg}</Alert>}
       {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
 
-      <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+      <Typography variant="h6" fontWeight={700} sx={{ mb: 2, color: '#fff' }}>
         Comodines disponibles
       </Typography>
       <Grid container spacing={2} sx={{ mb: 4 }}>
@@ -162,7 +162,7 @@ export default function Shop() {
         ))}
       </Grid>
 
-      <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+      <Typography variant="h6" fontWeight={700} sx={{ mb: 2, color: '#fff' }}>
         Mi inventario
       </Typography>
       {inventory.length === 0 ? (

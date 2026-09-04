@@ -149,13 +149,32 @@ export default function GameBackground({ children, minHeight = '100vh' }) {
           boxShadow: '0 6px 20px rgba(0,0,0,0.5)',
           opacity: 0.55,
           transform: 'rotate(-8deg)',
+          background: '#fff',
         }}
       >
-        <Box sx={{ position: 'absolute', inset: 0, bgcolor: '#fff' }} />
-        <Box sx={{ position: 'absolute', top: 0, bottom: 0, left: '38%', width: '24%', bgcolor: '#1E4FAF' }} />
-        <Box sx={{ position: 'absolute', top: '36%', bottom: 0, left: 0, right: 0, bgcolor: '#1E4FAF', clipPath: 'polygon(0 0, 100% 0, 100% 100%)' }} />
-        <Box sx={{ position: 'absolute', top: 0, bottom: '36%', left: 0, right: 0, bgcolor: '#E11D2A', clipPath: 'polygon(0 100%, 100% 100%, 100% 0)' }} />
-        <Box sx={{ position: 'absolute', top: '45%', left: '45%', width: 12, height: 12, borderRadius: '50%', bgcolor: '#FFC10D', transform: 'translate(-50%,-50%)', border: '2px solid #fff' }} />
+        {/* Cuadrante superior izquierdo (azul) */}
+        <Box sx={{ position: 'absolute', top: 0, left: 0, width: '38%', height: '38%', bgcolor: '#1E4FAF' }} />
+        {/* Cuadrante inferior izquierdo (rojo) */}
+        <Box sx={{ position: 'absolute', bottom: 0, left: 0, width: '38%', height: '38%', bgcolor: '#E11D2A' }} />
+        {/* Cuadrante superior derecho (rojo) */}
+        <Box sx={{ position: 'absolute', top: 0, right: 0, width: '38%', height: '38%', bgcolor: '#E11D2A' }} />
+        {/* Cuadrante inferior derecho (azul) */}
+        <Box sx={{ position: 'absolute', bottom: 0, right: 0, width: '38%', height: '38%', bgcolor: '#1E4FAF' }} />
+        {/* Escudo central */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: 16,
+            height: 16,
+            borderRadius: '50%',
+            bgcolor: '#FFC10D',
+            transform: 'translate(-50%,-50%)',
+            border: '2.5px solid #fff',
+            boxShadow: '0 0 6px rgba(255,193,13,0.5)',
+          }}
+        />
       </Box>
 
       {/* Estrellas doradas fijas, tenues y con parpadeo suave */}
