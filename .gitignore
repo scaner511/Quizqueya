@@ -5,6 +5,9 @@ node_modules/
 dist/
 build/
 
+# Capacitor (generado en CI)
+frontend/android/
+
 # Entorno y secretos
 .env
 .env.local

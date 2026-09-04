@@ -4,15 +4,12 @@ import {
   Box,
   Typography,
   Button,
-  LinearProgress,
-  Card,
-  CardContent,
-  Alert,
   Chip,
   CircularProgress,
   Tooltip,
   Snackbar,
-  IconButton,
+  Card,
+  CardContent,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -26,15 +23,10 @@ import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import BoltIcon from '@mui/icons-material/Bolt';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/client';
+import GameBackground from '../components/game/GameBackground';
+import CircularTimer from '../components/game/CircularTimer';
 
 const TOTAL_SECONDS = 30;
-
-function levelColor(t) {
-  if (t > 15) return '#2E7D32';
-  if (t > 10) return '#F9A825';
-  if (t > 5) return '#F57C00';
-  return '#D32F2F';
-}
 
 const POWER_ICONS = {
   eliminar_dos: <RemoveCircleOutlineIcon fontSize="small" />,
@@ -72,7 +64,7 @@ export default function Quiz() {
   const [snack, setSnack] = useState(null);
   const [usingPower, setUsingPower] = useState(null);
 
-  const gameId = locState?.gameId;
+  const [gameId, setGameId] = useState(locState?.gameId);
 
   const showSnack = (msg) => setSnack(msg);
   const closeSnack = () => setSnack(null);
@@ -131,12 +123,13 @@ export default function Quiz() {
     }
   };
 
-  // Cargar la primera pregunta + inventario
+  // Cargar la primera pregunta + inventario. Si no llega gameId (botón "Jugar" de la navegación),
+  // se crea la partida primero y luego se carga la primera pregunta.
   useEffect(() => {
-    const load = async () => {
+    const loadGame = async (id) => {
       try {
         const [qRes, invRes] = await Promise.all([
-          api.get(`/games/${gameId}/question`),
+          api.get(`/games/${id}/question`),
           api.get('/shop/inventory'),
         ]);
         setGame(qRes.data.game);
@@ -150,8 +143,26 @@ export default function Quiz() {
         setLoading(false);
       }
     };
-    if (gameId) load();
-  }, [gameId]);
+
+    const init = async () => {
+      if (gameId) {
+        await loadGame(gameId);
+        return;
+      }
+      try {
+        const { data } = await api.post('/games', {});
+        setGameId(data.game.id);
+        await loadGame(data.game.id);
+      } catch (err) {
+        setLoading(false);
+        if (err.response?.status === 429) {
+          setLives(0);
+        }
+      }
+    };
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Al cargar cada pregunta nueva, gestionar el congelamiento del reloj
   useEffect(() => {
@@ -242,29 +253,52 @@ export default function Quiz() {
 
   if (ended) {
     return (
-      <Container maxWidth="sm" sx={{ py: 6, textAlign: 'center' }}>
-        <Card>
-          <CardContent>
-            <Typography variant="h4" fontWeight={800} sx={{ mb: 2 }}>
-              ¡Partida terminada!
+      <GameBackground>
+        <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <Box sx={{ fontSize: 90, mb: 2 }}>{game?.correctAnswers > (game?.totalQuestions || 1) / 2 ? '🏆' : '🎯'}</Box>
+          <Typography variant="h3" fontWeight={900} sx={{ color: '#FFC10D', textShadow: '0 4px 0 #0B1F4B' }}>
+            ¡Partida terminada!
+          </Typography>
+          <Box
+            sx={{
+              mt: 3,
+              mx: 'auto',
+              maxWidth: 320,
+              p: 3,
+              borderRadius: 4,
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06))',
+              border: '3px solid rgba(255,255,255,0.25)',
+              boxShadow: '0 16px 40px rgba(0,0,0,0.4)',
+            }}
+          >
+            <Typography variant="h5" fontWeight={900} sx={{ color: '#fff' }}>
+              {game?.correctAnswers ?? 0} correctas
             </Typography>
-            <Typography variant="body1" sx={{ mb: 3 }}>
-              Correctas: {game?.correctAnswers ?? 0} · Puntuación: {game?.score ?? 0}
+            <Typography variant="h4" fontWeight={900} sx={{ color: '#FFC10D', mt: 1 }}>
+              {game?.score ?? 0} pts
             </Typography>
-            <Button variant="contained" color="primary" onClick={() => navigate('/')}>
-              Volver al inicio
-            </Button>
-          </CardContent>
-        </Card>
-      </Container>
+          </Box>
+          <Button
+            variant="contained"
+            color="warning"
+            size="large"
+            onClick={() => navigate('/')}
+            sx={{ mt: 4, px: 5, fontSize: '1.1rem' }}
+          >
+            Volver al inicio
+          </Button>
+        </Container>
+      </GameBackground>
     );
   }
 
   if (loading || !question) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-        <CircularProgress />
-      </Box>
+      <GameBackground>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+          <CircularProgress color="warning" />
+        </Box>
+      </GameBackground>
     );
   }
 
@@ -276,39 +310,35 @@ export default function Quiz() {
   const available = (inventory || []).filter((p) => p.quantity > 0 && !result);
 
   return (
-    <Container maxWidth="sm" sx={{ py: 3 }}>
-      {/* Encabezado del juego */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-        <Chip icon={<FavoriteIcon />} label={`${lives}/5`} color={lives > 1 ? 'primary' : 'error'} />
-        <Chip
-          label={`Racha: ${game?.correctStreak ?? 0}`}
-          color={(game?.correctStreak ?? 0) >= 5 ? 'success' : 'default'}
-        />
-        <Chip label={`${question.difficulty}`} color="default" />
-        {multiplierActive && (
-          <Chip icon={<BoltIcon sx={{ color: '#ffd54f !important' }} />} label="XP x2" color="warning" />
-        )}
-        {isFrozen && (
-          <Chip icon={<AcUnitIcon />} label="Tiempo congelado" color="info" />
-        )}
-      </Box>
+    <GameBackground>
+      <Container maxWidth="sm" sx={{ py: 3, position: 'relative', zIndex: 1 }}>
+        {/* Encabezado del juego */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+          <Chip icon={<FavoriteIcon sx={{ color: '#ff8fa5 !important' }} />} label={`${lives}/5`} sx={{ bgcolor: 'rgba(255,255,255,0.16)', color: '#fff' }} />
+          <Chip
+            label={`Racha: ${game?.correctStreak ?? 0}`}
+            color={(game?.correctStreak ?? 0) >= 5 ? 'success' : 'default'}
+          />
+          <Chip label={`${question.difficulty} · ${game?.score ?? 0} pts`} sx={{ bgcolor: 'rgba(255,255,255,0.16)', color: '#fff' }} />
+          {multiplierActive && (
+            <Chip icon={<BoltIcon sx={{ color: '#ffd54f !important' }} />} label="XP x2" color="warning" />
+          )}
+          {isFrozen && (
+            <Chip icon={<AcUnitIcon />} label="Congelado" color="info" />
+          )}
+        </Box>
 
-      {/* Temporizador */}
-      <LinearProgress
-        variant="determinate"
-        value={(timeLeft / currentSeconds) * 100}
-        sx={{ height: 10, borderRadius: 5, mb: 1, '& .MuiLinearProgress-bar': { bgcolor: isFrozen ? '#0288d1' : levelColor(timeLeft) } }}
-      />
-      <Typography variant="h5" fontWeight={800} align="center" sx={{ mb: 2, color: isFrozen ? '#0288d1' : levelColor(timeLeft) }}>
-        {isFrozen ? '⏸' : `${timeLeft}s`}
-      </Typography>
+        {/* Temporizador circular */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <CircularTimer timeLeft={timeLeft} totalSeconds={currentSeconds} frozen={isFrozen} />
+        </Box>
 
-      {/* Pregunta */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" fontWeight={700}>
-            {question.text}
-          </Typography>
+        {/* Pregunta */}
+        <Card sx={{ mb: 2, background: 'linear-gradient(180deg, #ffffff, #f2f5ff)', borderTop: `6px solid ${question.difficulty === 'facil' ? '#2EBD59' : question.difficulty === 'media' ? '#3D6FD0' : question.difficulty === 'dificil' ? '#F57C00' : '#E11D2A'}` }}>
+          <CardContent>
+            <Typography variant="h6" fontWeight={800}>
+              {question.text}
+            </Typography>
           {hint && (
             <Typography variant="body2" sx={{ mt: 1, fontWeight: 700, color: 'secondary.main' }}>
               💡 Pista: empieza con &ldquo;{hint}&rdquo;
@@ -324,25 +354,26 @@ export default function Quiz() {
 
       {/* Barra de comodines */}
       {!result && (
-        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
           {available.length === 0 ? (
-            <Typography variant="caption" color="text.secondary">
-              No tienes comodines. Cómpralos en la tienda.
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+              Compra comodines en la tienda para ayudas.
             </Typography>
           ) : (
             available.map((p) => (
               <Tooltip key={p.powerUpId} title={`${p.name} (x${p.quantity})`}>
                 <span>
-                  <IconButton
+                  <Button
                     size="small"
-                    color="secondary"
+                    color="warning"
+                    variant="contained"
                     disabled={!!usingPower}
                     onClick={() => usePowerUp(p.powerUpId, p.slug)}
-                    sx={{ border: '1px solid #ddd' }}
+                    sx={{ borderRadius: 10, minWidth: 52, px: 1.5 }}
                   >
-                    {usingPower === p.slug ? <CircularProgress size={18} /> : POWER_ICONS[p.slug] || '?'}
-                    <span style={{ fontSize: 11, marginLeft: 2 }}>x{p.quantity}</span>
-                  </IconButton>
+                    {usingPower === p.slug ? <CircularProgress size={18} color="inherit" /> : POWER_ICONS[p.slug] || '?'}
+                    <Box component="span" sx={{ fontSize: 11, ml: 0.5 }}>x{p.quantity}</Box>
+                  </Button>
                 </span>
               </Tooltip>
             ))
@@ -350,7 +381,7 @@ export default function Quiz() {
         </Box>
       )}
 
-      {/* Opciones */}
+      {/* Opciones grandes */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         {(question.options || []).map((opt, i) => {
           const hidden = hiddenOptions.includes(i);
@@ -358,69 +389,113 @@ export default function Quiz() {
           const wrongSelected = isWrongSelection(i);
           const disabled = selected !== null || hidden;
           if (hidden) return null;
+          const letter = String.fromCharCode(65 + i);
           return (
             <Button
               key={i}
-              variant="outlined"
+              variant="contained"
               fullWidth
               disabled={disabled}
               onClick={() => submitAnswer(i, timeLeft)}
               sx={{
                 justifyContent: 'flex-start',
                 textAlign: 'left',
-                py: 1.5,
+                py: 1.8,
                 px: 2,
-                borderColor: correctSelected ? '#2E7D32' : wrongSelected ? '#D32F2F' : '#ddd',
-                bgcolor: correctSelected ? 'success.light' : wrongSelected ? 'error.light' : 'transparent',
-                color: correctSelected || wrongSelected ? '#fff' : 'inherit',
-                '&:hover': { borderColor: 'primary.main', bgcolor: disabled ? undefined : 'primary.light' },
+                fontSize: '1.02rem',
+                color: correctSelected || wrongSelected ? '#fff' : '#123A7F',
+                bgcolor: correctSelected ? '#2EBD59' : wrongSelected ? '#E11D2A' : '#ffffff',
+                border: '3px solid rgba(255,255,255,0.35)',
+                boxShadow: `0 6px 0 ${correctSelected ? '#1F9A44' : wrongSelected ? '#B01422' : '#B8C4E0'}, 0 8px 20px rgba(0,0,0,0.35)`,
+                '&:hover:not(:disabled)': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: `0 9px 0 ${correctSelected ? '#1F9A44' : wrongSelected ? '#B01422' : '#B8C4E0'}, 0 10px 24px rgba(0,0,0,0.4)`,
+                },
+                '&:disabled': { opacity: 1 },
               }}
             >
-              {correctSelected && <CheckCircleIcon sx={{ mr: 1 }} />}
-              {wrongSelected && <CancelIcon sx={{ mr: 1 }} />}
-              {opt}
+              <Box
+                sx={{
+                  width: 34,
+                  height: 34,
+                  mr: 1.5,
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(18,58,127,0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 900,
+                  color: '#123A7F',
+                  flexShrink: 0,
+                }}
+              >
+                {letter}
+              </Box>
+              <Box sx={{ flex: 1 }}>{opt}</Box>
+              {correctSelected && <CheckCircleIcon sx={{ color: '#fff' }} />}
+              {wrongSelected && <CancelIcon sx={{ color: '#fff' }} />}
             </Button>
           );
         })}
       </Box>
 
+
       {/* Feedback */}
       {result && (
-        <Box sx={{ mt: 3 }}>
-          <Alert severity={result.result.isCorrect ? 'success' : 'error'} icon={result.result.isCorrect ? <CheckCircleIcon /> : <CancelIcon />}>
-            <Typography fontWeight={700}>
+        <Box
+          sx={{
+            mt: 3,
+            p: 2.5,
+            borderRadius: 3,
+            background: result.result.isCorrect
+              ? 'linear-gradient(180deg, #3EF07A, #2EBD59)'
+              : 'linear-gradient(180deg, #FF5A67, #E11D2A)',
+            border: '3px solid rgba(255,255,255,0.4)',
+            boxShadow: `0 6px 0 ${result.result.isCorrect ? '#1F9A44' : '#B01422'}, 0 10px 26px rgba(0,0,0,0.4)`,
+            color: '#fff',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+            {result.result.isCorrect ? (
+              <CheckCircleIcon sx={{ fontSize: 40 }} />
+            ) : (
+              <CancelIcon sx={{ fontSize: 40 }} />
+            )}
+            <Typography variant="h6" fontWeight={900}>
               {result.result.timedOut
                 ? '¡Tiempo agotado!'
                 : result.result.isCorrect
-                  ? `¡Correcto! +${result.result.xpEarned} XP · +${result.result.pesosEarned} Pesos`
-                  : `Incorrecto. +${result.result.xpEarned} XP`}
+                  ? '¡Correcto!'
+                  : '¡Incorrecto!'}
             </Typography>
-            {result.result.explanation && (
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                {result.result.explanation}
-              </Typography>
-            )}
-            {result.livesLost > 0 && (
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                Perdiste una vida.
-              </Typography>
-            )}
-            {result.userStats?.levelUp && (
-              <Typography variant="body2" fontWeight={700} sx={{ mt: 1 }}>
-                ¡Subiste al nivel {result.userStats.level}!
-              </Typography>
-            )}
-          </Alert>
+          </Box>
+          <Typography variant="body1" fontWeight={700}>
+            {result.result.isCorrect ? `+${result.result.xpEarned} XP · +${result.result.pesosEarned} Pesos` : `+${result.result.xpEarned} XP`}
+          </Typography>
+          {result.result.explanation && (
+            <Typography variant="body2" sx={{ mt: 1, fontWeight: 500 }}>
+              {result.result.explanation}
+            </Typography>
+          )}
+          {result.livesLost > 0 && (
+            <Typography variant="body2" sx={{ mt: 1, fontWeight: 700 }}>
+              💔 Perdiste una vida.
+            </Typography>
+          )}
+          {result.userStats?.levelUp && (
+            <Typography variant="body2" fontWeight={800} sx={{ mt: 1 }}>
+              ⬆️ ¡Subiste al nivel {result.userStats.level}!
+            </Typography>
+          )}
           <Button
             variant="contained"
-            color="primary"
-            fullWidth
             size="large"
-            sx={{ mt: 2 }}
+            fullWidth
+            sx={{ mt: 2, fontSize: '1.05rem', color: result.result.isCorrect ? '#123A7F' : '#fff', bgcolor: '#fff' }}
             onClick={nextQuestion}
             disabled={lives <= 0 && !result.result.isCorrect && result.livesLost > 0}
           >
-            {lives <= 0 && result.livesLost > 0 ? 'Sin vidas' : 'Siguiente pregunta'}
+            {lives <= 0 && result.livesLost > 0 ? 'Sin vidas' : 'Siguiente ▶'}
           </Button>
         </Box>
       )}
@@ -432,6 +507,7 @@ export default function Quiz() {
         message={snack}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
-    </Container>
+      </Container>
+    </GameBackground>
   );
 }

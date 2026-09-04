@@ -57,7 +57,15 @@ function pesosFor(difficulty) {
 exports.startGame = async (req, res, next) => {
   try {
     const userId = req.userId;
-    const { categoryId } = req.body;
+    let { categoryId } = req.body;
+
+    // Si no se indica categoría, elegir una aleatoria para que toda partida tenga contenido
+    if (!categoryId) {
+      const all = await Category.findAll({ attributes: ['id'] });
+      if (all.length) {
+        categoryId = all[Math.floor(Math.random() * all.length)].id;
+      }
+    }
 
     // Verificar que haya vidas
     const user = await User.findByPk(userId);

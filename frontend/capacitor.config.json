@@ -1,0 +1,12 @@
+{
+  "appId": "com.quizqueya.app",
+  "appName": "Quizqueya",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

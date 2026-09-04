@@ -31,7 +31,8 @@ export default function MainLayout() {
   const [anchorEl, setAnchorEl] = useState(null);
 
   const current = location.pathname;
-  const tabValue = current === '/jugar' ? 1 : current === '/ranking' ? 2 : 0;
+  const tabPaths = ['/', '/jugar', '/ranking', '/tienda', '/perfil'];
+  const tabValue = tabPaths.indexOf(current) === -1 ? 0 : tabPaths.indexOf(current);
 
   const handleLogout = () => {
     logout();
@@ -141,10 +142,7 @@ export default function MainLayout() {
       >
         <BottomNavigation
           value={tabValue}
-          onChange={(e, newValue) => {
-            const paths = ['/', '/jugar', '/ranking'];
-            navigate(paths[newValue]);
-          }}
+          onChange={(e, newValue) => navigate(tabPaths[newValue])}
           showLabels
           sx={{ bgcolor: 'transparent' }}
           slotProps={{ root: { color: 'White' } }}
@@ -152,6 +150,8 @@ export default function MainLayout() {
           <BottomNavigationAction label="Inicio" icon={<HomeIcon />} sx={{ color: '#fff', '&.Mui-selected': { color: '#FFC10D' } }} />
           <BottomNavigationAction label="Jugar" icon={<SportsEsportsIcon />} sx={{ color: '#fff', '&.Mui-selected': { color: '#FFC10D' } }} />
           <BottomNavigationAction label="Ranking" icon={<EmojiEventsIcon />} sx={{ color: '#fff', '&.Mui-selected': { color: '#FFC10D' } }} />
+          <BottomNavigationAction label="Tienda" icon={<StorefrontIcon />} sx={{ color: '#fff', '&.Mui-selected': { color: '#FFC10D' } }} />
+          <BottomNavigationAction label="Perfil" icon={<PersonIcon />} sx={{ color: '#fff', '&.Mui-selected': { color: '#FFC10D' } }} />
         </BottomNavigation>
       </Paper>
     </Box>
